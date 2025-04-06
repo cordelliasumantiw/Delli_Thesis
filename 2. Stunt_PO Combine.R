@@ -12,10 +12,12 @@ na_check_csv_comb <- sapply(po_data, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
 
 #Standardize both dataset
-#Set the 'District' columns to upper case letter
+#Set the 'District' and 'Village' columns to upper case letter
 csv_combined$District <- toupper(csv_combined$District)
 stunt_panel$District <- toupper(stunt_panel$District)
 po_data$region <- toupper(po_data$region)
+stunt_panel_vil$District <- toupper(stunt_panel_vil$District)
+stunt_panel_vil$Village <- toupper(stunt_panel_vil$Village)
 
 #Remove parentheses and re-arrange
 po_data$region <- gsub("(.*) \\((.*)\\)", "\\2 \\1", po_data$region)
@@ -32,12 +34,17 @@ po_data <- po_data %>%
     TRUE ~ region
   ))
 
-#Combine PO Data with Stunt at district-level
+#Convert from Hectares to Thousnads of Hectares
+po_data$oil_palm_planted_area_hectares <- po_data$oil_palm_planted_area_hectares / 1000
+po_data <- po_data %>%
+  rename(OP_Area = oil_palm_planted_area_hectares)
+
+#1. Combine PO Data with Stunt at district-level
 subset_data$District <- toupper(subset_data$District)
 
 combined_stunt_po_dist <- merge(stunt_panel, po_data, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
-stunt_po_dist <- combined_stunt_po_dist[, c("Year", "District", "Total_Children", "Short", "Very_Short", "Total_Stunting", "StuntRate", "oil_palm_planted_area_hectares")]
-stunt_po_dist$oil_palm_planted_area_hectares[stunt_po_dist$District == "LOMBOK UTARA" & is.na(stunt_po_dist$oil_palm_planted_area_hectares)] <- 0
+stunt_po_dist <- combined_stunt_po_dist[, c("Year", "District", "Total_Children", "Short", "Very_Short", "Total_Stunting", "StuntRate", "OP_Area")]
+stunt_po_dist$OP_Area[stunt_po_dist$District == "LOMBOK UTARA" & is.na(stunt_po_dist$OP_Area)] <- 0
 
 str(stunt_po_dist)
 na_check_csv_comb <- sapply(stunt_po_dist, function(x) sum(is.na(x)))
@@ -45,9 +52,17 @@ print(na_check_csv_comb)
 districts_na_dist <- stunt_po_dist %>% filter(is.na(oil_palm_planted_area_hectares))
 
 
-#Combine PO with Stunt at village-level
+#2. Combine PO with Stunt at village-level
 combined_stunt_po_village <- merge(stunt_panel_vil, po_data, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
-stunt_po_village <- combined_stunt_po_village[, c("Year", "District", "SubDist", "Village", "Total Children", "Short", "Very Short", "Total Stunting", "%", "oil_palm_planted_area_hectares")]
+stunt_po_village <- combined_stunt_po_village[, c("Year", "District", "SubDist", "Village", "Total Children", "Short", "Very Short", "Total Stunting", "%", "OP_Area")]
+
+head(stunt_po_village)
+
+#Change Villages name that have the exact same name
+stunt_po_village <- stunt_po_village %>%
+  group_by(Year, Village) %>%
+  mutate(Village_code = paste0(Village, "_", row_number())) %>%
+  ungroup()
 
 ##Re-check Vill with NA
 na_check_csv_comb <- sapply(stunt_po_village, function(x) sum(is.na(x)))
@@ -55,17 +70,17 @@ print(na_check_csv_comb)
 districts_na_vil <- stunt_po_village %>% filter(is.na(oil_palm_planted_area_hectares))
 
 ##Replace the NAs
-stunt_po_village$oil_palm_planted_area_hectares[
+stunt_po_village$OP_Area[
   stunt_po_village$District %in% c("LOMBOK UTARA", "KEPULAUAN TANIMBAR", "KOTA CIMAHI", "KOTA MAGELANG", "KOTA MATARAM", "KOTA PEKALONGAN", "KOTA SURAKARTA", "KOTA TEGAL") &
-    is.na(stunt_po_village$oil_palm_planted_area_hectares)
+    is.na(stunt_po_village$OP_Area)
 ] <- 0
 
-
+head(stunt_po_village)
 
 #----------------------------------------------------------------
 #Simple Regression District level
-lm(stunt_po_dist$StuntRate~stunt_po_dist$oil_palm_planted_area_hectares, data = stunt_po_dist)
-summary(lm(stunt_po_dist$StuntRate~stunt_po_dist$oil_palm_planted_area_hectares, data = stunt_po_dist))
+lm(stunt_po_dist$StuntRate~stunt_po_dist$OP_Area, data = stunt_po_dist)
+summary(lm(stunt_po_dist$StuntRate~stunt_po_dist$OP_Area, data = stunt_po_dist))
 
 #Table
 dist_reg <- lm(stunt_po_dist$StuntRate~stunt_po_dist$oil_palm_planted_area_hectares, data = stunt_po_dist)
@@ -75,9 +90,6 @@ stargazer(dist_reg, title = "Dist Regression Results",
           dep.var.labels = "Stunting Rate",
           covariate.labels = "OP Planted Area (ha)",
           type = "text")
-
-
-rm(firs_reg)
 
 #Table
 install.packages("broom")
@@ -94,8 +106,8 @@ stargazer(vil_reg, title = "Village Regression Results",
 
 
 #Simple Regression Village level
-lm(stunt_po_village$`%`~stunt_po_village$oil_palm_planted_area_hectares, data = stunt_po_village)
-summary(lm(stunt_po_village$`%`~stunt_po_village$oil_palm_planted_area_hectares, data = stunt_po_village))
+lm(stunt_po_village$`%`~stunt_po_village$OP_Area, data = stunt_po_village)
+summary(lm(stunt_po_village$`%`~stunt_po_village$OP_Area, data = stunt_po_village))
 
 
 #----------------------------------------------------------------

@@ -73,6 +73,17 @@ csv_combined <- file_list %>%
   lapply(read_csv_file_name) %>%
   bind_rows()
 
+#Benerin Stunting Data in Kadumanis Village
+csv_combined <- csv_combined %>%
+  mutate(
+    `Total Children` = ifelse(District == "Brebes" & SubDist == "SALEM" & Village == "Kadumanis" & Year %in% c(2019, 2020), 192, `Total Children`),
+    Short = ifelse(District == "Brebes" & SubDist == "SALEM" & Village == "Kadumanis" & Year %in% c(2019, 2020), 55, Short),
+    `Very Short` = ifelse(District == "Brebes" & SubDist == "SALEM" & Village == "Kadumanis" & Year %in% c(2019, 2020), 0, `Very Short`),
+    `Total Stunting` = ifelse(District == "Brebes" & SubDist == "SALEM" & Village == "Kadumanis" & Year %in% c(2019, 2020), 55, `Total Stunting`),
+    `%` = ifelse(District == "Brebes" & SubDist == "SALEM" & Village == "Kadumanis" & Year %in% c(2019, 2020), 28.65, `%`)
+  )
+str(csv_combined)
+
 #CUMA BUAT CROSSCHECK Calculate Stuntng Rate for a Specific District and Year
 speci_data <- csv_combined %>%
   filter(District == "SRAGEN", Year == "2020") %>%
@@ -99,7 +110,7 @@ str(csv_combined)
 
 #Aggregate
 aggregated_csv_combined <- csv_combined %>%
-  group_by(Year, District) %>%
+  group_by(District, Year) %>%
   summarise(
     Total_Children = sum(`Total Children`, na.rm = TRUE),
     Short = sum(Short, na.rm = TRUE),
@@ -139,6 +150,6 @@ stunt_panel_vil <- subset_data2 %>%
   group_by(District) %>%
   filter(n_distinct(Year) == 3) %>%
   ungroup()
-str(stunt_panel)
+
 #----------------------------------------------------------------
 #MAP OUT THE District level Data
