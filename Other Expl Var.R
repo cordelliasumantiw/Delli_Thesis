@@ -175,6 +175,7 @@ all_data_vil <- all_data_vil %>%
 na_check_csv_comb <- sapply(all_data_vil, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
 na <- all_data_vil %>% filter(is.na(Child_SupFeed))
+rm(na)
 
 #Fixed
 all_data_vil <- all_data_vil %>%
@@ -189,6 +190,76 @@ stunting_model <- lm(`%`~
                        CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
                        `PostNatal_Care` + `Nutri_Couns`, data = all_data_vil)
 summary(stunting_model)
+head(all_data_vil)
+
+#-----------------------------------------------------------
+
+#Combine Stunt, PO, Expl. Variables (District-level)
+#Aggregate all_data_vil to District data
+all_data_dist <- all_data_vil %>%
+  group_by(Year, District) %>%
+  summarise(
+    Total_Children = sum(`Total Children`, na.rm = TRUE),
+    Total_Stunting = sum(`Total Stunting`, na.rm = TRUE),
+    StuntRate = (sum(`Total Stunting`, na.rm = TRUE) / sum(`Total Children`, na.rm = TRUE)) * 100,
+    OP_Area = mean(OP_Area, na.rm = TRUE),
+    Child_SupFeed = mean(Child_SupFeed, na.rm = TRUE),
+    VitA = mean(VitA, na.rm = TRUE),
+    Zinc = mean(Zinc, na.rm = TRUE),
+    Compl_Imun = mean(Compl_Imun, na.rm = TRUE),
+    EarlChildEdu = mean(EarlChildEdu, na.rm = TRUE),
+    Wom_SupFeed = mean(Wom_SupFeed, na.rm = TRUE),
+    Wom_IFA = mean(Wom_IFA, na.rm = TRUE),
+    Wom_K4 = mean(Wom_K4, na.rm = TRUE),
+    CleanWater = mean(CleanWater, na.rm = TRUE),
+    Sanitation = mean(Sanitation, na.rm = TRUE),
+    IntSerPost = mean(IntSerPost, na.rm = TRUE),
+    Health_Insur = mean(Health_Insur, na.rm = TRUE),
+    PostNatal_Care = mean(PostNatal_Care, na.rm = TRUE),
+    Nutri_Couns = mean(Nutri_Couns, na.rm = TRUE)
+  )
+all_data_dist$StuntRate[is.na(all_data_dist$StuntRate) | is.nan(all_data_dist$StuntRate)] <- 0
+
+#Delete DEMAK Dist
+all_data_dist <- all_data_dist %>%
+  filter(District != "DEMAK")
+
+#Buat Check Ada yg NA Value
+na_check_csv_comb <- sapply(all_data_dist, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
+
+#CUMA BUAT CROSSCHECK Calculate Stuntng Rate for a Specific District and Year
+speci_data <- all_data_vil %>%
+  filter(District == "BLORA", Year == "2019") %>%
+  summarise(
+    Total_Children = sum(`Total Children`, na.rm = TRUE),
+    Total_Stunt = sum(`Total Stunting`, na.rm = TRUE),
+    StuntRate = (sum(`Total Stunting`, na.rm = TRUE) / sum(`Total Children`, na.rm = TRUE)) * 100,
+    OP_Area = mean(OP_Area, na.rm = TRUE),
+    Child_SupFeed = mean(Child_SupFeed, na.rm = TRUE),
+    VitA = mean(VitA, na.rm = TRUE),
+    Zinc = mean(Zinc, na.rm = TRUE),
+    Compl_Imun = mean(Compl_Imun, na.rm = TRUE),
+    EarlChildEdu = mean(EarlChildEdu, na.rm = TRUE),
+    Wom_SupFeed = mean(Wom_SupFeed, na.rm = TRUE),
+    Wom_IFA = mean(Wom_IFA, na.rm = TRUE),
+    Wom_K4 = mean(Wom_K4, na.rm = TRUE),
+    CleanWater = mean(CleanWater, na.rm = TRUE),
+    Sanitation = mean(Sanitation, na.rm = TRUE),
+    IntSerPost = mean(IntSerPost, na.rm = TRUE),
+    Health_Insur = mean(Health_Insur, na.rm = TRUE),
+    PostNatal_Care = mean(PostNatal_Care, na.rm = TRUE),
+    Nutri_Couns = mean(Nutri_Couns, na.rm = TRUE)
+  )
+rm(speci_data)
+
+#Regression with Variablesss
+stunting_model_dist <- lm(`StuntRate`~
+                       `OP_Area` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
+                       `EarlChildEdu` + `Wom_SupFeed` + `Wom_IFA` + Wom_K4 + 
+                       CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
+                       `PostNatal_Care` + `Nutri_Couns`, data = all_data_dist)
+summary(stunting_model_dist)
 #----------------------------------------------------------------
 #Additional District-level Variables FROM FSVA 2019-2021#
 fsva2019 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Food Security and Vulnerability Atlas/tabel_data (1).csv")
