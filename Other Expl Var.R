@@ -193,7 +193,6 @@ summary(stunting_model)
 head(all_data_vil)
 
 #-----------------------------------------------------------
-
 #Combine Stunt, PO, Expl. Variables (District-level)
 #Aggregate all_data_vil to District data
 all_data_dist <- all_data_vil %>%
@@ -260,6 +259,7 @@ stunting_model_dist <- lm(`StuntRate`~
                        CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
                        `PostNatal_Care` + `Nutri_Couns`, data = all_data_dist)
 summary(stunting_model_dist)
+
 #----------------------------------------------------------------
 #Additional District-level Variables FROM FSVA 2019-2021#
 fsva2019 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Food Security and Vulnerability Atlas/tabel_data (1).csv")
@@ -267,9 +267,11 @@ fsva2020 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/T
 fsva2021 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Food Security and Vulnerability Atlas/tabel_data (3).csv")
 
 #Add Year, Rename, Select
+#2019
 fsva2019 <- fsva2019 %>%
   mutate(Year = 2019)
-fsva2019 <- rename(
+fsva2019 <- fsva2019 %>%
+  rename(
     District = Wilayah,
     Poverty = Kemiskinan....,
     FoodExp = Pengeluaran.Pangan....,
@@ -279,12 +281,18 @@ fsva2019 <- rename(
     HealWork = Rasio.Tenaga.Kesehatan,
     LifeExp = Angka.Harapan.Hidup..tahun.
   )
-colnames(fsva2019)
+fsva2019 <- fsva2019 %>%
+  select(Year, District, Poverty, LifeExp, FoodExp, NoElectricity, Wom_AvgSch, HealWork)
 
-  select(Year, District, Poverty, LifeExpc, FoodExpn, NoElectricity, Wom_AvgSch, HealWork)
+fsva2019$District <- sub(".*-\\s*(.*)", "\\1", fsva2019$District)
+fsva2019$District <- toupper(fsva2019$District)
+
+#2020
 fsva2020 <- fsva2020 %>%
-  mutate(Year = 2020) %>%
+  mutate(Year = 2020)
+fsva2020 <- fsva2020 %>%
   rename(
+    District = Wilayah,
     Poverty = Kemiskinan....,
     FoodExp = Pengeluaran.Pangan....,
     NoElectricity = Tanpa.Listrik....,
@@ -292,11 +300,19 @@ fsva2020 <- fsva2020 %>%
     NoCleanWat = Tanpa.Air.Bersih....,
     HealWork = Rasio.Tenaga.Kesehatan,
     LifeExp = Angka.Harapan.Hidup..tahun.
-  ) %>%
-  select(Year, Poverty, LifeExp, FoodExp, NoElectricity, Wom_AvgSch, HealWork)
+  )
+fsva2020 <- fsva2020 %>%
+  select(Year, District, Poverty, LifeExp, FoodExp, NoElectricity, Wom_AvgSch, HealWork)
+
+fsva2020$District <- sub(".*-\\s*(.*)", "\\1", fsva2020$District)
+fsva2020$District <- toupper(fsva2020$District)
+
+#2021
 fsva2021 <- fsva2021 %>%
-  mutate(Year = 2021) %>%
+  mutate(Year = 2021)
+fsva2021 <- fsva2021 %>%
   rename(
+    District = Wilayah,
     Poverty = Kemiskinan....,
     FoodExp = Pengeluaran.Pangan....,
     NoElectricity = Tanpa.Listrik....,
@@ -304,5 +320,32 @@ fsva2021 <- fsva2021 %>%
     NoCleanWat = Tanpa.Air.Bersih....,
     HealWork = Rasio.Tenaga.Kesehatan,
     LifeExp = Angka.Harapan.Hidup..tahun.
-  ) %>%
-  select(Year, Poverty, LifeExp, FoodExp, NoElectricity, Wom_AvgSch, HealWork)
+  )
+fsva2021 <- fsva2021 %>%
+  select(Year, District, Poverty, LifeExp, FoodExp, NoElectricity, Wom_AvgSch, HealWork)
+
+fsva2021$District <- sub(".*-\\s*(.*)", "\\1", fsva2021$District)
+fsva2021$District <- toupper(fsva2021$District)
+
+#fsva all combined
+fsva <- bind_rows(fsva2019, fsva2020, fsva2021)
+str(fsva)
+head(fsva)
+
+#----------------------------------------------------------------
+#Combine FSVA with other Variablesss
+all_data_dist <- merge(all_data_dist, fsva, by.x = c("Year", "District"), by.y = c("Year", "District"), all.x = TRUE)
+
+all_data_dist <- all_data_dist %>%
+  select(Year, District, Total_Children, Total_Stunting, StuntRate, OP_Area, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns, Poverty, LifeExp, Wom_AvgSch, FoodExp, NoElectricity, HealWork)
+
+#Regression with FSVA + Variablesss
+all_data <- lm(`StuntRate`~
+                       `OP_Area` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
+                       `EarlChildEdu` + `Wom_SupFeed` + `Wom_IFA` + Wom_K4 + 
+                       CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
+                       `PostNatal_Care` + `Nutri_Couns` + `Poverty` + `LifeExp` + `Wom_AvgSch` + `FoodExp` + `NoElectricity` + `HealWork` , data = all_data_dist)
+summary(all_data)
+
+na_check_csv_comb <- sapply(all_data_dist, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
