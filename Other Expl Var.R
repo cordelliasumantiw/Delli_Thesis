@@ -349,3 +349,16 @@ summary(all_data)
 
 na_check_csv_comb <- sapply(all_data_dist, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
+
+#----------------------------------------------------------------
+#Combine FSVA + other Variablesss + deforest
+deforest <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/spatial-metrics-indonesia-territorial_deforestation_kabupaten.csv")
+
+#Remove parentheses and re-arrange
+deforest$region <- toupper(deforest$region)
+deforest$region <- gsub("(.*) \\((.*)\\)", "\\2 \\1", deforest$region)
+deforest$deforestation_hectares <- deforest$deforestation_hectares / 1000
+
+all_data <- merge(all_data_dist, deforest, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
+all_data_dist <- all_data_dist %>%
+  select(Year, District, Total_Children, Total_Stunting, StuntRate, OP_Area, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns, Poverty, LifeExp, Wom_AvgSch, FoodExp, NoElectricity, HealWork, deforestation_hectares)
