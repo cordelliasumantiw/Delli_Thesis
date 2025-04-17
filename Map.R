@@ -11,29 +11,29 @@ bound$ADM2_EN <- toupper(bound$ADM2_EN)
 str(bound)
 str(po_data)
 
-#PERCENTAGE CHANGE FROM 2019 TO 2021
+#PERCENTAGE CHANGE FROM 2003 TO 2022
 #Separate both Datasets
-po_data_2019 <- po_data %>% filter(year == 2019)
-po_data_2021 <- po_data %>% filter(year == 2021)
-po_data_1921 <- po_data_2019 %>%
+po_data_2003 <- po_data %>% filter(year == 2003)
+po_data_2022 <- po_data %>% filter(year == 2022)
+po_data_change <- po_data_2003 %>%
   select(region, OP_Area) %>%
-  rename(OP_Area_2019 = OP_Area) %>%
-  left_join(po_data_2021 %>% select(region, OP_Area) %>% rename(OP_Area_2021 = OP_Area), by = "region")
+  rename(OP_Area_2003 = OP_Area) %>%
+  left_join(po_data_2022 %>% select(region, OP_Area) %>% rename(OP_Area_2022 = OP_Area), by = "region")
 
 #Percentage Change
-po_data_1921 <- po_data_1921 %>%
-  mutate(Change = ((OP_Area_2021 - OP_Area_2019) / OP_Area_2019) * 100)
+po_data_change <- po_data_change %>%
+  mutate(Change = ((OP_Area_2022 - OP_Area_2003) / OP_Area_2003) * 100)
 
 #Change NAs to 0
-po_data_1921 <- po_data_1921 %>%
+po_data_change <- po_data_change %>%
   mutate(Change = ifelse(is.na(Change), 0, Change))
 
-na_check_csv_comb <- sapply(po_data_1921, function(x) sum(is.na(x)))
+na_check_csv_comb <- sapply(po_data_change, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
 
 #Merge the Change with Bound
 bound <- bound %>%
-  left_join(po_data_1921 %>% select(region, Change), by = c("ADM2_EN" = "region"))
+  left_join(po_data_change %>% select(region, Change), by = c("ADM2_EN" = "region"))
 
 na_check_csv_comb <- sapply(bound, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
@@ -62,6 +62,24 @@ po_data <- po_data %>%
 
 #Check the Data distribution
 summary(bound$Change)
+
+#ANNUAL Growth Line
+po_cumulative <- po_data %>%
+  group_by(year) %>%
+  summarise(total_area = sum(OP_Area, na.rm = TRUE)) %>%
+  mutate(cumulative_area = cumsum(total_area))
+
+#Plot the cumulative growth
+ggplot(po_cumulative, aes(x = year, y = total_area)) +
+  geom_line(color = "#045a8d", size = 1) +
+  geom_point(color = "red") +
+  labs(
+    title = "Palm Oil Expansion from 2003-2022",
+    x = "Year",
+    y = "Palm Oil Area (kha)"
+  ) +
+  theme_minimal()
+
 
 #Plot the Map!!!
 #Classification based on Quantile CLassification
