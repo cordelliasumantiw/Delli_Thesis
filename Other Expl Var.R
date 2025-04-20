@@ -1,6 +1,7 @@
 #COMBINE Explanatory Variables Village-level Data FROM 2019-2021#
 install.packages("tools")
 library(dplyr)
+library(tidyr)
 library(readr)
 library(tools)
 folder_services1 <- "C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Scrape Data/2019"
@@ -162,8 +163,9 @@ services_vil <- services_vil %>%
   mutate(Village_code = paste0(Village, "_", row_number())) %>%
   ungroup()
 str(services_vil)
+
 #----------------------------------------------------------------
-#Combine Stunt, PO, Expl. Variables (Village-level)
+#1. Combine Stunt, PO, Expl. Variables (Village-level)
 all_data_vil <- left_join(stunt_po_village, services_vil, by = c("Village_code", "Year"))
 
 ##Replace the NAs
@@ -193,7 +195,7 @@ summary(stunting_model)
 head(all_data_vil)
 
 #-----------------------------------------------------------
-#Combine Stunt, PO, Expl. Variables (District-level)
+#2. Combine Stunt, PO, Expl. Variables (District-level)
 #Aggregate all_data_vil to District data
 all_data_dist <- all_data_vil %>%
   group_by(Year, District) %>%
@@ -261,7 +263,7 @@ stunting_model_dist <- lm(`StuntRate`~
 summary(stunting_model_dist)
 
 #----------------------------------------------------------------
-#Additional District-level Variables FROM FSVA 2019-2021#
+#3. Additional District-level Variables FROM FSVA 2019-2021#
 fsva2019 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Food Security and Vulnerability Atlas/tabel_data (1).csv")
 fsva2020 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Food Security and Vulnerability Atlas/tabel_data (2).csv")
 fsva2021 <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/Food Security and Vulnerability Atlas/tabel_data (3).csv")
@@ -332,6 +334,16 @@ fsva <- bind_rows(fsva2019, fsva2020, fsva2021)
 str(fsva)
 head(fsva)
 
+na_check_csv_comb <- sapply(fsva, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
+
+#Add POHUWATO DISTRICT Data in fsva Dataset
+fsva <- rbind(fsva, 
+              data.frame(Year = 2019, District = "POHUWATO", Poverty = 15.09, LifeExp = 68.58, FoodExp = 13.12, NoElectricity = 1.76, Wom_AvgSch = 8.44, HealWork = 1.94),
+              data.frame(Year = 2020, District = "POHUWATO", Poverty = 14.88, LifeExp = 68.70, FoodExp = 12.83, NoElectricity = 1.13, Wom_AvgSch = 8.69, HealWork = 1.80),
+              data.frame(Year = 2021, District = "POHUWATO", Poverty = 15.27, LifeExp = 68.74, FoodExp = 10.21, NoElectricity = 0.76, Wom_AvgSch = 8.72, HealWork = 1.66)
+)
+
 #----------------------------------------------------------------
 #Combine FSVA with other Variablesss
 all_data_dist <- merge(all_data_dist, fsva, by.x = c("Year", "District"), by.y = c("Year", "District"), all.x = TRUE)
@@ -351,7 +363,114 @@ na_check_csv_comb <- sapply(all_data_dist, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
 
 #----------------------------------------------------------------
-#Combine FSVA + other Variablesss + deforest
+#4. PO Data lag-15 years
+
+#Year 2019
+lag_2019 <- po_data %>%
+  filter(year >= 2004 & year <= 2018) %>%
+  select(year, region, OP_Area)
+lag_2019 <- lag_2019 %>%
+  pivot_wider(names_from = year, values_from = OP_Area, names_prefix = "OP_Area_")
+#Join the OP Data 2019 with the lags
+po_2019 <- po_data %>%
+  filter(year == 2019)
+po_2019 <- po_2019 %>%
+  left_join(lag_2019, by = "region")
+po_2019 <- po_2019 %>%
+  select(year, region, OP_Area, OP_Area_2018:OP_Area_2004) %>%
+  rename(
+    po_lag1 = OP_Area_2018,
+    po_lag2 = OP_Area_2017,
+    po_lag3 = OP_Area_2016,
+    po_lag4 = OP_Area_2015,
+    po_lag5 = OP_Area_2014,
+    po_lag6 = OP_Area_2013,
+    po_lag7 = OP_Area_2012,
+    po_lag8 = OP_Area_2011,
+    po_lag9 = OP_Area_2010,
+    po_lag10 = OP_Area_2009,
+    po_lag11 = OP_Area_2008,
+    po_lag12 = OP_Area_2007,
+    po_lag13 = OP_Area_2006,
+    po_lag14 = OP_Area_2005,
+    po_lag15 = OP_Area_2004
+  )
+
+#Year 2020
+lag_2020 <- po_data %>%
+  filter(year >= 2005 & year <= 2019) %>%
+  select(year, region, OP_Area)
+lag_2020 <- lag_2020 %>%
+  pivot_wider(names_from = year, values_from = OP_Area, names_prefix = "OP_Area_")
+#Join the OP Data 2020 with the lags
+po_2020 <- po_data %>%
+  filter(year == 2020)
+po_2020 <- po_2020 %>%
+  left_join(lag_2020, by = "region")
+po_2020 <- po_2020 %>%
+  select(year, region, OP_Area, OP_Area_2019:OP_Area_2005) %>%
+  rename(
+    po_lag1 = OP_Area_2019,
+    po_lag2 = OP_Area_2018,
+    po_lag3 = OP_Area_2017,
+    po_lag4 = OP_Area_2016,
+    po_lag5 = OP_Area_2015,
+    po_lag6 = OP_Area_2014,
+    po_lag7 = OP_Area_2013,
+    po_lag8 = OP_Area_2012,
+    po_lag9 = OP_Area_2011,
+    po_lag10 = OP_Area_2010,
+    po_lag11 = OP_Area_2009,
+    po_lag12 = OP_Area_2008,
+    po_lag13 = OP_Area_2007,
+    po_lag14 = OP_Area_2006,
+    po_lag15 = OP_Area_2005
+  )
+
+#Year 2021
+lag_2021 <- po_data %>%
+  filter(year >= 2006 & year <= 2020) %>%
+  select(year, region, OP_Area)
+lag_2021 <- lag_2021 %>%
+  pivot_wider(names_from = year, values_from = OP_Area, names_prefix = "OP_Area_")
+#Join the OP Data 2021 with the lags
+po_2021 <- po_data %>%
+  filter(year == 2021)
+po_2021 <- po_2021 %>%
+  left_join(lag_2021, by = "region")
+po_2021 <- po_2021 %>%
+  select(year, region, OP_Area, OP_Area_2020:OP_Area_2006) %>%
+  rename(
+    po_lag1 = OP_Area_2020,
+    po_lag2 = OP_Area_2019,
+    po_lag3 = OP_Area_2018,
+    po_lag4 = OP_Area_2017,
+    po_lag5 = OP_Area_2016,
+    po_lag6 = OP_Area_2015,
+    po_lag7 = OP_Area_2014,
+    po_lag8 = OP_Area_2013,
+    po_lag9 = OP_Area_2012,
+    po_lag10 = OP_Area_2011,
+    po_lag11 = OP_Area_2010,
+    po_lag12 = OP_Area_2009,
+    po_lag13 = OP_Area_2008,
+    po_lag14 = OP_Area_2007,
+    po_lag15 = OP_Area_2006
+  )
+
+#Combine lags for year 2019-2021
+po_lag <- bind_rows(po_2019, po_2020, po_2021)
+head(po_lag)
+head(all_data_dist)
+po_lag <- po_lag %>%
+  rename(Year = year, District = region)
+
+#Combine with other Variablesss
+all_data_dist <- all_data_dist %>%
+  left_join(po_lag, by = c("Year", "District"))
+
+#----------------------------------------------------------------
+#NOT YET DONE - Combine FSVA + other Variablesss + deforest
 deforest <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/spatial-metrics-indonesia-territorial_deforestation_kabupaten.csv")
 
 #Remove parentheses and re-arrange

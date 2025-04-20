@@ -111,7 +111,7 @@ summary(lm(stunt_po_village$`%`~stunt_po_village$OP_Area, data = stunt_po_villag
 
 
 #----------------------------------------------------------------
-#Demographic and Health Survey Data
+#CANT BE USED! Demographic and Health Survey Data
 library(haven)
 
 #PODES Survey
