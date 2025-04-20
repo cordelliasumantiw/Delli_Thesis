@@ -1,9 +1,18 @@
-install.packages(c("ggplot2", "sf", "dplyr", "viridis"))
+install.packages(c("ggplot2", "sf", "dplyr", "viridis", "newscale", "shadowtext", "patchwork", "extrafont"))
 library(ggplot2)
 library(sf)
 library(dplyr)
 library(viridis)
 library(tidyr)
+library(grid)
+library(shadowtext)
+library(patchwork)
+library(extrafont)
+
+font_import()
+y
+
+loadfonts()
 
 bound <- st_read("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/R files/Dist Boundaries/idn_admbnda_adm2_bps_20200401.shp")
 bound$ADM2_EN <- toupper(bound$ADM2_EN)
@@ -11,7 +20,49 @@ bound$ADM2_EN <- toupper(bound$ADM2_EN)
 str(bound)
 str(po_data)
 
-#PERCENTAGE CHANGE FROM 2003 TO 2022
+#---------------------------------------------------------
+#Cumulative Area Columns
+po_cumulative <- po_data %>%
+  group_by(year) %>%
+  summarise(total_area = sum(OP_Area, na.rm = TRUE)) %>%
+  mutate(cumulative_area = cumsum(total_area))
+
+#1. Plot the Total Area Annualy
+ggplot(po_cumulative, aes(x = year, y = total_area)) +
+  geom_line(color = "#076FA1", size = 1.75) +
+  geom_point(size = 2.5,
+             color = "#076FA1",
+             stroke = 1) +
+  labs(
+    title = "Palm Oil Expansion from 2003-2022",
+    x = "Year",
+    y = "Palm Oil Area (1000ha)"
+  ) +
+  scale_x_continuous(
+    breaks = c(2003, 2005, 2007, 2009, 2011, 2013, 2015, 2017, 2019, 2021),
+    labels = c("2003", "2005", "2007", "2009", "2011", "2013", "2015", "2017", "2019", "2021")
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, max(po_cumulative$total_area), by = 1000)
+  ) +
+  theme(
+    legend.position = "none",
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "#A8BAC4", size = 0.3),
+    axis.ticks.length.y = unit(0, "mm"),
+    axis.ticks.length.x = unit(2, "mm"),
+    axis.line.x.bottom = element_line(color = "black"),
+    axis.text.y = element_text(family = "Helvetica", size = 10),
+    axis.text.x = element_text(family = "Helvetica", size = 10),
+    plot.title = element_text(family = "Helvetica", size = 14, face = "bold", hjust = 0.5),
+    axis.title.x = element_text(family = "Helvetica", size = 10),
+    axis.title.y = element_text(family = "Helvetica", size = 10)
+  )
+
+
+#---------------------------------------------------------
+#2. PERCENTAGE CHANGE FROM 2003 TO 2022
 #Separate both Datasets
 po_data_2003 <- po_data %>% filter(year == 2003)
 po_data_2022 <- po_data %>% filter(year == 2022)
@@ -62,24 +113,6 @@ po_data <- po_data %>%
 
 #Check the Data distribution
 summary(bound$Change)
-
-#ANNUAL Growth Line
-po_cumulative <- po_data %>%
-  group_by(year) %>%
-  summarise(total_area = sum(OP_Area, na.rm = TRUE)) %>%
-  mutate(cumulative_area = cumsum(total_area))
-
-#Plot the cumulative growth
-ggplot(po_cumulative, aes(x = year, y = total_area)) +
-  geom_line(color = "#045a8d", size = 1) +
-  geom_point(color = "red") +
-  labs(
-    title = "Palm Oil Expansion from 2003-2022",
-    x = "Year",
-    y = "Palm Oil Area (kha)"
-  ) +
-  theme_minimal()
-
 
 #Plot the Map!!!
 #Classification based on Quantile CLassification
