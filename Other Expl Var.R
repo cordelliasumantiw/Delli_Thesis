@@ -349,7 +349,7 @@ fsva <- rbind(fsva,
 all_data_dist <- merge(all_data_dist, fsva, by.x = c("Year", "District"), by.y = c("Year", "District"), all.x = TRUE)
 
 all_data_dist <- all_data_dist %>%
-  select(Year, District, Total_Children, Total_Stunting, StuntRate, OP_Area, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns, Poverty, LifeExp, Wom_AvgSch, FoodExp, NoElectricity, HealWork)
+  select(Year, District, Total_Children, Total_Stunting, StuntRate, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns, Poverty, LifeExp, Wom_AvgSch, FoodExp, NoElectricity, HealWork, OP_Area)
 
 #Regression with FSVA + Variablesss
 all_data <- lm(`StuntRate`~
@@ -377,7 +377,7 @@ po_2019 <- po_data %>%
 po_2019 <- po_2019 %>%
   left_join(lag_2019, by = "region")
 po_2019 <- po_2019 %>%
-  select(year, region, OP_Area, OP_Area_2018:OP_Area_2004) %>%
+  select(year, region, OP_Area_2018:OP_Area_2004) %>%
   rename(
     po_lag1 = OP_Area_2018,
     po_lag2 = OP_Area_2017,
@@ -408,7 +408,7 @@ po_2020 <- po_data %>%
 po_2020 <- po_2020 %>%
   left_join(lag_2020, by = "region")
 po_2020 <- po_2020 %>%
-  select(year, region, OP_Area, OP_Area_2019:OP_Area_2005) %>%
+  select(year, region, OP_Area_2019:OP_Area_2005) %>%
   rename(
     po_lag1 = OP_Area_2019,
     po_lag2 = OP_Area_2018,
@@ -439,7 +439,7 @@ po_2021 <- po_data %>%
 po_2021 <- po_2021 %>%
   left_join(lag_2021, by = "region")
 po_2021 <- po_2021 %>%
-  select(year, region, OP_Area, OP_Area_2020:OP_Area_2006) %>%
+  select(year, region, OP_Area_2020:OP_Area_2006) %>%
   rename(
     po_lag1 = OP_Area_2020,
     po_lag2 = OP_Area_2019,
@@ -460,14 +460,14 @@ po_2021 <- po_2021 %>%
 
 #Combine lags for year 2019-2021
 po_lag <- bind_rows(po_2019, po_2020, po_2021)
-head(po_lag)
-head(all_data_dist)
+
 po_lag <- po_lag %>%
   rename(Year = year, District = region)
 
-#Combine with other Variablesss
+#Combine with other Variablesss FIX
 all_data_dist <- all_data_dist %>%
   left_join(po_lag, by = c("Year", "District"))
+
 
 #----------------------------------------------------------------
 #NOT YET DONE - Combine FSVA + other Variablesss + deforest
