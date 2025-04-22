@@ -113,14 +113,22 @@ po_data <- po_data %>%
     TRUE ~ region
   ))
 
-#Plot the Map!!!
 
+#Plot the Map!!!
 #Classification based on Quantile CLassification
 bound <- bound %>%
   mutate(Change_Class = cut(Change,
                             breaks = c(-Inf, 0, 20, 40, 60, 80, 100, Inf),
                             labels = c("No Change", "1% 20%", "20% - 40%", "40% - 60%", "60% - 80%", "80% - 100%", ">100%"),
                             include.lowest = TRUE))
+
+if (!"Change_Class" %in% names(bound)) {
+  bound$Change_Class <- "No Data"
+}
+
+bound$Change_Class <- factor(bound$Change_Class, levels = c("No Change", "1% - 20%", "20% - 40%", 
+                                                            "40% - 60%", "60% - 80%", "80% - 100%", 
+                                                            ">100%", "No Data"))
 
 ggplot(data = bound) +
   geom_sf(aes(fill = Change_Class)) +
@@ -130,19 +138,9 @@ ggplot(data = bound) +
                                "40% - 60%" = "#6baed6", 
                                "60% - 80%" = "#4292c6", 
                                "80% - 100%" = "#2171b5", 
-                               ">100%" = "#084594"),
+                               ">100%" = "#084594",
+                               "No Data" = "#636363"),
                     name = "% Change",
-                    breaks = c("No Data", "No Change", "1% - 20%", "20% - 40%", "40% - 60%", "60% - 80%", "80% - 100%", ">100%")) +
-  labs(title = "Percent Change in Palm Oil Expansion (2003-2022)") +
-  theme_minimal(base_family = "Helvetica") +
-  theme(
-    text = element_text(family = "Helvetica"),    # Set all text elements to Helvetica
-    legend.position = "bottom",                   # Move legend to the bottom
-    legend.direction = "horizontal",              # Make the legend horizontal
-    legend.box = "horizontal",                    # Arrange legend items horizontally
-    legend.title.align = 0.5,                     # Align the title of the legend
-    legend.key.width = unit(1.5, "cm"),           # Increase the width of the legend keys
-    legend.key.height = unit(0.5, "cm"),          # Increase the height of the legend keys
-    plot.title = element_text(hjust = 0.5, size = 16), # Center and increase the title size
-    plot.margin = margin(1, 1, 2, 1, "cm")
-  )
+                    breaks = c("No Change", "1% - 20%", "20% - 40%", "40% - 60%", "60% - 80%", "80% - 100%", ">100%", "No Data")) +
+  labs(title = "Percentage Change in Palm Oil Expansion (2003-2022)") +
+  theme_minimal(base_family = "Helvetica")

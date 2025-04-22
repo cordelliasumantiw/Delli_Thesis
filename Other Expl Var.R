@@ -256,7 +256,7 @@ rm(speci_data)
 
 #Regression with Variablesss
 stunting_model_dist <- lm(`StuntRate`~
-                       `OP_Area` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
+                       `OP_Area.x` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
                        `EarlChildEdu` + `Wom_SupFeed` + `Wom_IFA` + Wom_K4 + 
                        CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
                        `PostNatal_Care` + `Nutri_Couns`, data = all_data_dist)
@@ -468,8 +468,23 @@ po_lag <- po_lag %>%
 all_data_dist <- all_data_dist %>%
   left_join(po_lag, by = c("Year", "District"))
 
+#Regression with other Variablesss
+all_data <- lm(`StuntRate`~
+                 `OP_Area.x` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
+                 `EarlChildEdu` + `Wom_SupFeed` + `Wom_IFA` + Wom_K4 + 
+                 CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
+                 `PostNatal_Care` + `Nutri_Couns` + `Poverty` + `LifeExp` + `Wom_AvgSch` + `FoodExp` + `NoElectricity` + `HealWork` +
+                 `po_lag1` + `po_lag2` + `po_lag3` + `po_lag4` + `po_lag5` + `po_lag6` + `po_lag7` + `po_lag8` +
+                 `po_lag9` + `po_lag10` + `po_lag11` + `po_lag12` + `po_lag13` + `po_lag14` + `po_lag15`, data = all_data_dist)
+summary(all_data)
+str(po_data_change)
+
+#FIXED EFFECT REG
+
 
 #----------------------------------------------------------------
+
+
 #NOT YET DONE - Combine FSVA + other Variablesss + deforest
 deforest <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/spatial-metrics-indonesia-territorial_deforestation_kabupaten.csv")
 
