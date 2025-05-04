@@ -152,7 +152,7 @@ services_vil <- services_vil %>%
   )
 head(services_vil)
 services_vil <- services_vil %>%
-  select(Village, Year, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns)
+  select(Village, Year, Child_SupFeed, Compl_Imun, VitA, CleanWater, Sanitation, IntSerPost, Health_Insur)
 
 #Village code
 services_vil$Village <- toupper(services_vil$Village)
@@ -162,17 +162,19 @@ services_vil <- services_vil %>%
   group_by(Year, Village) %>%
   mutate(Village_code = paste0(Village, "_", row_number())) %>%
   ungroup()
+
+full_stunt_po_village <- full_stunt_po_village %>%
+  group_by(Year, Village) %>%
+  mutate(Village_code = paste0(Village, "_", row_number())) %>%
+  ungroup()
 str(services_vil)
 
 #----------------------------------------------------------------
-#1. Combine Stunt, PO, Expl. Variables (Village-level)
-all_data_vil <- left_join(stunt_po_village, services_vil, by = c("Village_code", "Year"))
+#1. Combine Stunt, PO, Expl. Variables (Village-level FULL PANEL)
+full_stunt_po_village$Village <- toupper(full_stunt_po_village$Village)
 
-##Replace the NAs
-all_data_vil <- all_data_vil %>%
-  mutate_at(vars(
-    Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns
-  ), ~ifelse(is.na(.), 0, .))
+all_data_vil <- merge(full_stunt_po_village, services_vil,
+                      by = c("Village_code", "Year"))
 
 na_check_csv_comb <- sapply(all_data_vil, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
@@ -182,7 +184,7 @@ rm(na)
 #Fixed
 all_data_vil <- all_data_vil %>%
   select(
-    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `%`, OP_Area, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns
+    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `%`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, IntSerPost, Health_Insur
   )
 
 #Regression with Variablesss

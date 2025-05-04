@@ -1,6 +1,7 @@
 library(readr)
 library(readxl)
 library(tidyverse)
+library(plm)
 getwd()
 
 #Combine PO Data with Stunting Data#
@@ -41,22 +42,59 @@ po_data <- po_data %>%
 
 #1. Combine PO Data with Stunt at district-level
 subset_data$District <- toupper(subset_data$District)
+stunt_panel$District <- toupper(stunt_panel$District)
 
+#Full Stunt-PO by District
+full_comb_stunt_po_dist <- merge(subset_data, po_data, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
+full_stunt_po_dist <- full_comb_stunt_po_dist[, c("Year", "District", "Total_Children", "Short", "Very_Short", "Total_Stunting", "StuntRate", "OP_Area")]
+full_stunt_po_dist$OP_Area[full_stunt_po_dist$District == "LOMBOK UTARA" & is.na(full_stunt_po_dist$OP_Area)] <- 0
+##Replace the NAs
+full_stunt_po_dist$OP_Area[
+  full_stunt_po_dist$District %in% c("KEPULAUAN TANIMBAR", "KOTA CIMAHI", "KOTA MAGELANG", "KOTA MATARAM", "KOTA PEKALONGAN", "KOTA SURAKARTA", "KOTA TEGAL", "KOTABARU") &
+    is.na(full_stunt_po_dist$OP_Area)
+] <- 0
+
+#Balanced Stunt-PO by District
 combined_stunt_po_dist <- merge(stunt_panel, po_data, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
 stunt_po_dist <- combined_stunt_po_dist[, c("Year", "District", "Total_Children", "Short", "Very_Short", "Total_Stunting", "StuntRate", "OP_Area")]
 stunt_po_dist$OP_Area[stunt_po_dist$District == "LOMBOK UTARA" & is.na(stunt_po_dist$OP_Area)] <- 0
 
-str(stunt_po_dist)
 na_check_csv_comb <- sapply(stunt_po_dist, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
-districts_na_dist <- stunt_po_dist %>% filter(is.na(oil_palm_planted_area_hectares))
+districts_na_dist <- stunt_po_dist %>% filter(is.na(OP_Area))
 
 
 #2. Combine PO with Stunt at village-level
+subset_data2$District <- toupper(subset_data2$District)
+stunt_panel_vil$District <- toupper(stunt_panel_vil$District)
+
+#Full Stunt-PO by Village
+full_combined_stunt_po_village <- merge(subset_data2, po_data, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
+full_stunt_po_village <- full_combined_stunt_po_village[, c("Year", "District", "SubDist", "Village", "Total Children", "Short", "Very Short", "Total Stunting", "%", "OP_Area")]
+full_stunt_po_village <- full_stunt_po_village %>%
+  rename(StuntRate = `%`)
+##Replace the NAs
+full_stunt_po_village$OP_Area[
+  full_stunt_po_village$District %in% c("LOMBOK UTARA", "KEPULAUAN TANIMBAR", "KOTA CIMAHI", "KOTA MAGELANG", "KOTA MATARAM", "KOTA PEKALONGAN", "KOTA SURAKARTA", "KOTA TEGAL", "KOTABARU") &
+    is.na(full_stunt_po_village$OP_Area)
+] <- 0
+str(stunt_po_village)
+
+###Balanced Stunt-PO by Village
 combined_stunt_po_village <- merge(stunt_panel_vil, po_data, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
 stunt_po_village <- combined_stunt_po_village[, c("Year", "District", "SubDist", "Village", "Total Children", "Short", "Very Short", "Total Stunting", "%", "OP_Area")]
+stunt_po_village <- stunt_po_village %>%
+  rename(StuntRate = `%`)
+##Replace the NAs
+combined_stunt_po_village$OP_Area[
+  combined_stunt_po_village$District %in% c("LOMBOK UTARA", "KEPULAUAN TANIMBAR", "KOTA CIMAHI", "KOTA MAGELANG", "KOTA MATARAM", "KOTA PEKALONGAN", "KOTA SURAKARTA", "KOTA TEGAL", "KOTABARU") &
+    is.na(combined_stunt_po_village$OP_Area)
+] <- 0
 
-head(stunt_po_village)
+##Re-check Vill with NA
+na_check_csv_comb <- sapply(stunt_po_village, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
+districts_na_vil <- combined_stunt_po_village %>% filter(is.na(OP_Area))
 
 #Change Villages name that have the exact same name
 stunt_po_village <- stunt_po_village %>%
@@ -64,23 +102,19 @@ stunt_po_village <- stunt_po_village %>%
   mutate(Village_code = paste0(Village, "_", row_number())) %>%
   ungroup()
 
-##Re-check Vill with NA
-na_check_csv_comb <- sapply(stunt_po_village, function(x) sum(is.na(x)))
-print(na_check_csv_comb)
-districts_na_vil <- stunt_po_village %>% filter(is.na(oil_palm_planted_area_hectares))
-
-##Replace the NAs
-stunt_po_village$OP_Area[
-  stunt_po_village$District %in% c("LOMBOK UTARA", "KEPULAUAN TANIMBAR", "KOTA CIMAHI", "KOTA MAGELANG", "KOTA MATARAM", "KOTA PEKALONGAN", "KOTA SURAKARTA", "KOTA TEGAL") &
-    is.na(stunt_po_village$OP_Area)
-] <- 0
-
-head(stunt_po_village)
-
 #----------------------------------------------------------------
-#Simple Regression District level
-lm(stunt_po_dist$StuntRate~stunt_po_dist$OP_Area, data = stunt_po_dist)
-summary(lm(stunt_po_dist$StuntRate~stunt_po_dist$OP_Area, data = stunt_po_dist))
+
+str(full_stunt_po_village)
+
+
+#1. Simple Regression Village level
+#Full Panel - Fixed Effects Reg
+plm(StuntRate ~ OP_Area, data = full_stunt_po_village, model = "within", index = c("Village_code", "Year"))
+summary(plm(StuntRate ~ OP_Area, data = full_stunt_po_village, model = "within", index = c("Village_code", "Year")))
+
+#Balanced Panel - Fixed Effects Reg
+plm(StuntRate ~ OP_Area, data = stunt_po_village, model = "within", index = c("Village", "Year"))
+summary(plm(StuntRate ~ OP_Area, data = stunt_po_village, model = "within", index = c("Village", "Year")))
 
 #Table
 dist_reg <- lm(stunt_po_dist$StuntRate~stunt_po_dist$oil_palm_planted_area_hectares, data = stunt_po_dist)
@@ -109,22 +143,3 @@ stargazer(vil_reg, title = "Village Regression Results",
 lm(stunt_po_village$`%`~stunt_po_village$OP_Area, data = stunt_po_village)
 summary(lm(stunt_po_village$`%`~stunt_po_village$OP_Area, data = stunt_po_village))
 
-
-#----------------------------------------------------------------
-#CANT BE USED! Demographic and Health Survey Data
-library(haven)
-
-#PODES Survey
-podes2019 <- read_dta
-load("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/1. Indonesia Stunting Data/R files/Stunting Data Combined FIXXX/PODES/PODES/data/PODES2019.rda")
-
-
-
-
-child5_dhs <- read_dta("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/1. Indonesia Stunting Data/R files/Stunting Data Combined FIXXX/DHS/IDKR71DT/IDKR71FL.DTA")
-hh_dhs <- read_dta("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/1. Indonesia Stunting Data/R files/Stunting Data Combined FIXXX/DHS/IDHR71DT/IDHR71FL.DTA")
-women_dhs <- read_dta("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/1. Indonesia Stunting Data/R files/Stunting Data Combined FIXXX/DHS/IDIR71DT/IDIR71FL.DTA")
-
-install.packages("SUSENAS")
-library(SUSENAS)
-data("SUSENAS2020")
