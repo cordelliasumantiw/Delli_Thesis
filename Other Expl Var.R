@@ -170,7 +170,7 @@ full_stunt_po_village <- full_stunt_po_village %>%
 str(services_vil)
 
 #----------------------------------------------------------------
-#1. Combine Stunt, PO, Expl. Variables (Village-level FULL PANEL)
+#1.1 Combine Stunt, PO, Expl. Variables (Village-level FULL PANEL)
 full_stunt_po_village$Village <- toupper(full_stunt_po_village$Village)
 
 all_data_vil <- merge(full_stunt_po_village, services_vil,
@@ -184,17 +184,34 @@ rm(na)
 #Fixed
 all_data_vil <- all_data_vil %>%
   select(
-    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `%`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, IntSerPost, Health_Insur
+    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `StuntRate`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, IntSerPost, Health_Insur
   )
 
-#Regression with Variablesss
-stunting_model <- lm(`%`~
-                       `OP_Area` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
-                       `EarlChildEdu` + `Wom_SupFeed` + `Wom_IFA` + Wom_K4 + 
-                       CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
-                       `PostNatal_Care` + `Nutri_Couns`, data = all_data_vil)
+#FE Regression
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun + CleanWater + Sanitation + IntSerPost + Health_Insur | Village_code + Year, data = all_data_vil)
 summary(stunting_model)
-head(all_data_vil)
+
+
+#1.2 Combine Stunt, PO, Expl. Variables (Village-level BALANCED PANEL)
+stunt_po_village$Village <- toupper(stunt_po_village$Village)
+
+bal_all_data_vil <- merge(stunt_po_village, services_vil,
+                      by = c("Village_code", "Year"))
+
+na_check_csv_comb <- sapply(bal_all_data_vil, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
+na <- bal_all_data_vil %>% filter(is.na(Child_SupFeed))
+rm(na)
+
+#Fixed
+bal_all_data_vil <- bal_all_data_vil %>%
+  select(
+    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `StuntRate`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, IntSerPost, Health_Insur
+  )
+
+#FE Regression
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun + CleanWater + Sanitation + IntSerPost + Health_Insur | Village_code + Year, data = bal_all_data_vil)
+summary(stunting_model)
 
 #-----------------------------------------------------------
 #2. Combine Stunt, PO, Expl. Variables (District-level)
@@ -346,8 +363,47 @@ fsva <- rbind(fsva,
               data.frame(Year = 2021, District = "POHUWATO", Poverty = 15.27, LifeExp = 68.74, FoodExp = 10.21, NoElectricity = 0.76, Wom_AvgSch = 8.72, HealWork = 1.66)
 )
 
+fsva <- fsva %>%
+  mutate(District = case_when(
+    District == "GUNUNGKIDUL" ~ "GUNUNG KIDUL",
+    District == "JAKARTA TIMUR" ~ "KOTA JAKARTA TIMUR",
+    District == "BANYUASIN" ~ "BANYU ASIN",
+    District == "KOTA BANJARBARU" ~ "KOTA BANJAR BARU",
+    District == "JAKARTA TIMUR" ~ "KOTA JAKARTA TIMUR",
+    District == "JAKARTA PUSAT" ~ "KOTA JAKARTA PUSAT",
+    District == "JAKARTA SELATAN" ~ "KOTA JAKARTA SELATAN",
+    District == "JAKARTA UTARA" ~ "KOTA JAKARTA UTARA",
+    District == "JAKARTA BARAT" ~ "KOTA JAKARTA BARAT",
+    District == "KOTA PADANG SIDIMPUAN" ~ "KOTA PADANGSIDIMPUAN",
+    District == "LABUHANBATU" ~ "LABUHAN BATU",
+    District == "LABUHANBATU SELATAN" ~ "LABUHAN BATU SELATAN",
+    District == "LABUHANBATU UTARA" ~ "LABUHAN BATU UTARA",
+    District == "TULANG BAWANG" ~ "TULANGBAWANG",
+    TRUE ~ District
+  ))
+
+head(fsva)
 #----------------------------------------------------------------
 #Combine FSVA with other Variablesss
+
+#1. FULL Stunt-PO + Vill-contr Var + FSVA
+all_data_vil <- merge(all_data_vil, fsva, by.x = c("Year", "District"), by.y = c("Year", "District"), all.x = TRUE)
+
+na_check_csv_comb <- sapply(all_data_vil, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
+na <- all_data_vil %>% filter(is.na(Poverty))
+
+#FE Regression
+stunting_model <- plm(StuntRate ~
+                        OP_Area + Child_SupFeed + VitA + Compl_Imun +
+                        CleanWater + Sanitation + IntSerPost + Health_Insur +
+                        Poverty + LifeExp + Wom_AvgSch + FoodExp + NoElectricity,
+                      data = all_data_vil,
+                      model = "within",
+                      index = c("Village_code", "Year"))
+summary(stunting_model)
+
+
 all_data_dist <- merge(all_data_dist, fsva, by.x = c("Year", "District"), by.y = c("Year", "District"), all.x = TRUE)
 
 all_data_dist <- all_data_dist %>%
@@ -467,22 +523,21 @@ po_lag <- po_lag %>%
   rename(Year = year, District = region)
 
 #Combine with other Variablesss FIX
-all_data_dist <- all_data_dist %>%
+all_data_vil <- all_data_vil %>%
   left_join(po_lag, by = c("Year", "District"))
 
-#Regression with other Variablesss
-all_data <- lm(`StuntRate`~
-                 `OP_Area.x` + `Child_SupFeed` + VitA + Zinc + `Compl_Imun` + 
-                 `EarlChildEdu` + `Wom_SupFeed` + `Wom_IFA` + Wom_K4 + 
-                 CleanWater + Sanitation + `IntSerPost` + `Health_Insur` + 
-                 `PostNatal_Care` + `Nutri_Couns` + `Poverty` + `LifeExp` + `Wom_AvgSch` + `FoodExp` + `NoElectricity` + `HealWork` +
-                 `po_lag1` + `po_lag2` + `po_lag3` + `po_lag4` + `po_lag5` + `po_lag6` + `po_lag7` + `po_lag8` +
-                 `po_lag9` + `po_lag10` + `po_lag11` + `po_lag12` + `po_lag13` + `po_lag14` + `po_lag15`, data = all_data_dist)
-summary(all_data)
-str(po_data_change)
 
 #FIXED EFFECT REG
-
+stunting_model <- plm(StuntRate ~
+                        OP_Area.x + Child_SupFeed + VitA + Compl_Imun +
+                        CleanWater + Sanitation + IntSerPost + Health_Insur +
+                        Poverty + LifeExp + Wom_AvgSch + FoodExp + NoElectricity +
+                        `po_lag1` + `po_lag2` + `po_lag3` + `po_lag4` + `po_lag5` +
+                        `po_lag6` + `po_lag7` + `po_lag8` + `po_lag9` + `po_lag10`,
+                      data = all_data_vil,
+                      model = "within",
+                      index = c("Village_code", "Year"))
+summary(stunting_model)
 
 #----------------------------------------------------------------
 
