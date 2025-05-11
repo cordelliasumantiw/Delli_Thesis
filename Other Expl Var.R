@@ -152,7 +152,7 @@ services_vil <- services_vil %>%
   )
 head(services_vil)
 services_vil <- services_vil %>%
-  select(Village, Year, Child_SupFeed, Compl_Imun, VitA, CleanWater, Sanitation, IntSerPost, Health_Insur)
+  select(Village, Year, Child_SupFeed, Compl_Imun, VitA, CleanWater, Sanitation, BKB, IntSerPost, Health_Insur)
 
 #Village code
 services_vil$Village <- toupper(services_vil$Village)
@@ -184,11 +184,11 @@ rm(na)
 #Fixed
 all_data_vil <- all_data_vil %>%
   select(
-    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `StuntRate`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, IntSerPost, Health_Insur
+    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `StuntRate`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, BKB, IntSerPost, Health_Insur
   )
 
 #FE Regression
-stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun + CleanWater + Sanitation + IntSerPost + Health_Insur | Village_code + Year, data = all_data_vil)
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun + CleanWater + Sanitation + BKB + IntSerPost + Health_Insur | Village_code + Year, data = all_data_vil)
 summary(stunting_model)
 
 
@@ -206,11 +206,11 @@ rm(na)
 #Fixed
 bal_all_data_vil <- bal_all_data_vil %>%
   select(
-    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `StuntRate`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, IntSerPost, Health_Insur
+    Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, `StuntRate`, OP_Area, Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, BKB, IntSerPost, Health_Insur
   )
 
 #FE Regression
-stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun + CleanWater + Sanitation + IntSerPost + Health_Insur | Village_code + Year, data = bal_all_data_vil)
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun + CleanWater + Sanitation + BKB + IntSerPost + Health_Insur | Village_code + Year, data = bal_all_data_vil)
 summary(stunting_model)
 
 #-----------------------------------------------------------
@@ -394,10 +394,17 @@ print(na_check_csv_comb)
 na <- all_data_vil %>% filter(is.na(Poverty))
 
 #FE Regression
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun +
+                          CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
+                          Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork | Village_code + Year, data = all_data_vil)
+summary(stunting_model)
+
+
+library(plm)
 stunting_model <- plm(StuntRate ~
                         OP_Area + Child_SupFeed + VitA + Compl_Imun +
-                        CleanWater + Sanitation + IntSerPost + Health_Insur +
-                        Poverty + LifeExp + Wom_AvgSch + FoodExp + NoElectricity,
+                        CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
+                        Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork,
                       data = all_data_vil,
                       model = "within",
                       index = c("Village_code", "Year"))
@@ -553,3 +560,31 @@ deforest$deforestation_hectares <- deforest$deforestation_hectares / 1000
 all_data <- merge(all_data_dist, deforest, by.x = c("Year", "District"), by.y = c("year", "region"), all.x = TRUE)
 all_data_dist <- all_data_dist %>%
   select(Year, District, Total_Children, Total_Stunting, StuntRate, OP_Area, Child_SupFeed, VitA, Zinc, Compl_Imun, EarlChildEdu, Wom_SupFeed, Wom_IFA, Wom_K4, CleanWater, Sanitation, IntSerPost, Health_Insur, PostNatal_Care, Nutri_Couns, Poverty, LifeExp, Wom_AvgSch, FoodExp, NoElectricity, HealWork, deforestation_hectares)
+
+#----------------------------------------------------------------
+#Summary Statistics
+sum_stats <- data.frame(
+  Variable = c("OP_Area", "StuntRate", "Child_SupFeed", "VitA", "Compl_Imun", "CleanWater", "Sanitation", "BKB",
+               "IntSerPost", "Health_Insur", "Poverty", "FoodExp", "NoElectricity", "Wom_AvgSch", "HealWork"),
+  Mean = c(mean(all_data_vil$OP_Area), mean(all_data_vil$StuntRate), mean(all_data_vil$Child_SupFeed), mean(all_data_vil$VitA),
+           mean(all_data_vil$Compl_Imun), mean(all_data_vil$CleanWater), mean(all_data_vil$Sanitation), mean(all_data_vil$BKB),
+           mean(all_data_vil$IntSerPost), mean(all_data_vil$Health_Insur), mean(all_data_vil$Poverty), mean(all_data_vil$FoodExp),
+           mean(all_data_vil$NoElectricity), mean(all_data_vil$Wom_AvgSch), mean(all_data_vil$HealWork)),
+  SD = c(sd(all_data_vil$OP_Area), sd(all_data_vil$StuntRate), sd(all_data_vil$Child_SupFeed), sd(all_data_vil$VitA),
+         sd(all_data_vil$Compl_Imun), sd(all_data_vil$CleanWater), sd(all_data_vil$Sanitation), sd(all_data_vil$BKB),
+         sd(all_data_vil$IntSerPost), sd(all_data_vil$Health_Insur), sd(all_data_vil$Poverty), sd(all_data_vil$FoodExp),
+         sd(all_data_vil$NoElectricity), sd(all_data_vil$Wom_AvgSch), sd(all_data_vil$HealWork)),
+  min = c(min(all_data_vil$OP_Area), min(all_data_vil$StuntRate), min(all_data_vil$Child_SupFeed), min(all_data_vil$VitA),
+          min(all_data_vil$Compl_Imun), min(all_data_vil$CleanWater), min(all_data_vil$Sanitation), min(all_data_vil$BKB),
+          min(all_data_vil$IntSerPost), min(all_data_vil$Health_Insur), min(all_data_vil$Poverty), min(all_data_vil$FoodExp),
+          min(all_data_vil$NoElectricity), min(all_data_vil$Wom_AvgSch), min(all_data_vil$HealWork)),
+  max = c(max(all_data_vil$OP_Area), max(all_data_vil$StuntRate), max(all_data_vil$Child_SupFeed), max(all_data_vil$VitA),
+          max(all_data_vil$Compl_Imun), max(all_data_vil$CleanWater), max(all_data_vil$Sanitation), max(all_data_vil$BKB),
+          max(all_data_vil$IntSerPost), max(all_data_vil$Health_Insur), max(all_data_vil$Poverty), max(all_data_vil$FoodExp),
+          max(all_data_vil$NoElectricity), max(all_data_vil$Wom_AvgSch), max(all_data_vil$HealWork)),
+  N = c(length(all_data_vil$OP_Area), length(all_data_vil$StuntRate), length(all_data_vil$Child_SupFeed), length(all_data_vil$VitA),
+        length(all_data_vil$Compl_Imun), length(all_data_vil$CleanWater), length(all_data_vil$Sanitation), length(all_data_vil$BKB),
+        length(all_data_vil$IntSerPost), length(all_data_vil$Health_Insur), length(all_data_vil$Poverty), length(all_data_vil$FoodExp),
+        length(all_data_vil$NoElectricity), length(all_data_vil$Wom_AvgSch), length(all_data_vil$HealWork))
+)
+print(sum_stats)
