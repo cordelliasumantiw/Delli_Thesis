@@ -1,6 +1,7 @@
 library(dplyr)
 library(readr)
 library(stringr)
+getwd()
 
 #COMBINE VILLAGE-LEVEL DATA FROM 2019-2021#
 #Combine all 789 District Stunting Data
