@@ -1,7 +1,6 @@
 library(readr)
 library(readxl)
 library(tidyverse)
-library(plm)
 getwd()
 
 #Combine PO Data with Stunting Data#
