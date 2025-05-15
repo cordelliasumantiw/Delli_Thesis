@@ -2,7 +2,6 @@ library(readr)
 library(readxl)
 library(tidyverse)
 library(plm)
-getwd()
 
 #Combine PO Data with Stunting Data#
 po_data <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/1. Indonesia Stunting Data/R files/Stunting Data Combined FIXXX/indonesia-palm-oil-spatial-v5-oil-palm-planted-area-2024-10-29-kabupaten.csv")
