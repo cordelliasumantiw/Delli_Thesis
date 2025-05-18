@@ -163,7 +163,7 @@ bal_all_data_vil <- bal_all_data_vil %>%
 na_check_csv_comb <- sapply(bal_all_data_vil, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
 #----------------------------------------------------------------
-deforest <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Data/THESIS DATA FIX/spatial-metrics-indonesia-territorial_deforestation_kabupaten.csv")
+deforest <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Thesis Data/THESIS DATA FIX/terri_deforest_area.csv")
 
 #Remove parentheses and re-arrange
 deforest$region <- toupper(deforest$region)
@@ -196,7 +196,6 @@ na_check_csv_comb <- sapply(all_data, function(x) sum(is.na(x)))
 print(na_check_csv_comb)
 na <- all_data %>% filter(is.na(deforest))
 
-
 #1.2 Combine with other Variablesss FIX (BALANCED Panel)
 bal_all_data <- bal_all_data_vil %>%
   left_join(deforest, by = c("Year", "District"))
@@ -223,3 +222,27 @@ stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun 
                           CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
                           Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + avg_OP_first + avg_OP_second + deforest | Village_code + Year, data = bal_all_data)
 summary(stunting_model)
+
+#----------------------------------------------------------------
+#2 Emissions from Territorial Deforest.
+em <- read.csv("C:/Users/corde/OneDrive/Documents/國立台灣大學 NTU/Thesis/Thesis Data/THESIS DATA FIX/gross_emisisons_terri_deforest.csv")
+
+#Remove parentheses and re-arrange
+em$region <- toupper(em$region)
+em$region <- gsub("(.*) \\((.*)\\)", "\\2 \\1", em$region)
+em <- em %>%
+  rename(
+    emmissions = gross_greenhouse_gas_emissions_from_deforestation_tonnes_co..,
+    Year = year,
+    District = region)
+
+#Combine with other Variablesss FIX (FULL)
+all_data <- all_data_vil %>%
+  left_join(em, by = c("Year", "District"))
+
+all_data <- all_data %>%
+  select(Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, StuntRate, OP_Area,
+         Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, BKB, IntSerPost, Health_Insur,
+         Poverty, FoodExp, Wom_AvgSch, NoElectricity, HealWork, avg_OP_first, avg_OP_second, deforest, emissions)
+
+str(all_data$emmissions)

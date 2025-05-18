@@ -39,6 +39,14 @@ po_data$oil_palm_planted_area_hectares <- po_data$oil_palm_planted_area_hectares
 po_data <- po_data %>%
   rename(OP_Area = oil_palm_planted_area_hectares)
 
+
+
+#NYOBA AJA NTI DELETE DELL
+head(po_data)
+po_total <- po_data[po_data$year %in% c(2019, 2020, 2021) & po_data$parent_region == "Riau"]
+total_area <- sum(po_total$OP_Area, na.rm = TRUE)
+print(total_area)
+
 #--------------------------------------------------------
 #1. Combine PO Data with Stunt at district-level
 subset_data$District <- toupper(subset_data$District)
