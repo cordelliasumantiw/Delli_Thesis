@@ -24,3 +24,25 @@ stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun 
                           CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
                           Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + deforest + emissions | Village_code + Year, data = all_data)
 summary(stunting_model)
+
+#Balanced Panel
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun +
+                          CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
+                          Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + deforest + emissions | Village_code + Year, data = bal_all_data)
+summary(stunting_model)
+
+#----------------------------------------------------------------
+#4 Add Village & District level & PO_lag Controls
+#Full Panel
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun +
+                          CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
+                          Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + deforest + emissions +
+                          avg_OP_first + avg_OP_second | Village_code + Year, data = all_data)
+summary(stunting_model)
+
+#Balanced Panel
+stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun +
+                          CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
+                          Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + deforest + emissions +
+                          avg_OP_first + avg_OP_second | Village_code + Year, data = bal_all_data)
+summary(stunting_model)

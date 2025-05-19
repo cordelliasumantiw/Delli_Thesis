@@ -235,9 +235,12 @@ em <- em %>%
     emissions = gross_greenhouse_gas_emissions_from_deforestation_tonnes_co..,
     Year = year,
     District = region)
-em$emissions <- em$emissions / 1e9
+em$emissions <- em$emissions / 1e6
 
-#Combine with other Variablesss FIX (FULL)
+na_check_csv_comb <- sapply(em, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
+
+#1.1 Combine with other Variablesss FIX (FULL)
 all_data <- all_data %>%
   left_join(em, by = c("Year", "District"))
 
@@ -255,9 +258,28 @@ all_data <- all_data %>%
   mutate(
     emissions = ifelse(is.na(emissions), 0, emissions)
   )
+
+#1.2 Combine with other Variablesss FIX (BALANCED Panel)
+bal_all_data <- bal_all_data %>%
+  left_join(em, by = c("Year", "District"))
+
+bal_all_data <- bal_all_data %>%
+  select(Year, District, SubDist, Village_code, `Total Children`, `Total Stunting`, StuntRate, OP_Area,
+         Child_SupFeed, VitA, Compl_Imun, CleanWater, Sanitation, BKB, IntSerPost, Health_Insur,
+         Poverty, FoodExp, Wom_AvgSch, NoElectricity, HealWork, avg_OP_first, avg_OP_second, deforest, emissions)
+
+
+##Replace the NAs
+bal_all_data <- bal_all_data %>%
+  mutate(
+    emissions = ifelse(is.na(emissions), 0, deforest)
+  )
+
+na_check_csv_comb <- sapply(all_data, function(x) sum(is.na(x)))
+print(na_check_csv_comb)
 #----------------------------------------------------------------
 #FE Regression
 stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun +
                           CleanWater + Sanitation + BKB + IntSerPost + Health_Insur +
-                          Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + deforest + emissions | Village_code + Year, data = all_data)
+                          Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork + deforest + emissions | Village_code + Year, data = bal_all_data)
 summary(stunting_model)

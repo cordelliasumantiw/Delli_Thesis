@@ -412,7 +412,7 @@ stunting_model <- feols(StuntRate ~ OP_Area + Child_SupFeed + VitA + Compl_Imun 
                           Poverty + Wom_AvgSch + FoodExp + NoElectricity + HealWork | Village_code + Year, data = bal_all_data_vil)
 summary(stunting_model)
 #----------------------------------------------------------------
-#Summary Statistics Model 2
+#Summary Statistics Model 2 - Village chrctr. controls
 sum_stats <- data.frame(
   Variable = c("OP_Area", "StuntRate", "Child_SupFeed", "VitA", "Compl_Imun", "CleanWater", "Sanitation", "BKB",
                "IntSerPost", "Health_Insur"),
@@ -434,14 +434,14 @@ sum_stats <- data.frame(
 )
 print(sum_stats)
 
-#Summary Statistics Model 3
+#Summary Statistics Model 3 - District chrctr. controls
 sum_stats <- data.frame(
   Variable = c("OP_Area", "StuntRate", "Child_SupFeed", "VitA", "Compl_Imun", "CleanWater", "Sanitation", "BKB",
-               "IntSerPost", "Health_Insur", "Poverty", "FoodExp", "NoElectricity", "Wom_AvgSch", "HealWork"),
+               "IntSerPost", "Health_Insur", "Poverty", "Wom_AvgSch", "FoodExp", "NoElectricity", "HealWork", "deforest", "emissions"),
   Mean = c(mean(all_data_vil$OP_Area), mean(all_data_vil$StuntRate), mean(all_data_vil$Child_SupFeed), mean(all_data_vil$VitA),
            mean(all_data_vil$Compl_Imun), mean(all_data_vil$CleanWater), mean(all_data_vil$Sanitation), mean(all_data_vil$BKB),
-           mean(all_data_vil$IntSerPost), mean(all_data_vil$Health_Insur), mean(all_data_vil$Poverty), mean(all_data_vil$FoodExp),
-           mean(all_data_vil$NoElectricity), mean(all_data_vil$Wom_AvgSch), mean(all_data_vil$HealWork)),
+           mean(all_data_vil$IntSerPost), mean(all_data_vil$Health_Insur), mean(all_data_vil$Poverty), mean(all_data_vil$Wom_AvgSch),
+           mean(all_data_vil$FoodExp), mean(all_data_vil$NoElectricity), mean(all_data_vil$HealWork), mean(all_data_vil$deforest)),
   SD = c(sd(all_data_vil$OP_Area), sd(all_data_vil$StuntRate), sd(all_data_vil$Child_SupFeed), sd(all_data_vil$VitA),
          sd(all_data_vil$Compl_Imun), sd(all_data_vil$CleanWater), sd(all_data_vil$Sanitation), sd(all_data_vil$BKB),
          sd(all_data_vil$IntSerPost), sd(all_data_vil$Health_Insur), sd(all_data_vil$Poverty), sd(all_data_vil$FoodExp),
